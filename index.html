@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0d6efd">
     <title>Job Ledger</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <!-- jsPDF for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- PWA Manifest (inline) -->
-<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiSm9iIExlZGdlciIsInNob3J0X25hbWUiOiJMZWRnZXIiLCJkZXNjcmlwdGlvbiI6Ik9mZmxpbmUgYWNjb3VudGluZyBmb3IgbXVsdGlwbGUgam9icyIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjZjhmOWZhIiwidGhlbWVfY29sb3IiOiIjMGQ2ZWZkIiwiaWNvbnMiOlt7InNyYyI6ImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyNTYnIGhlaWdodD0nMjU2JyB2aWV3Qm94PScwIDAgMjU2IDI1Nic+PHJlY3Qgd2lkdGg9JzI1NicgaGVpZ2h0PScyNTYnIGZpbGw9JyMwZDZlZmQnLz48dGV4dCB4PScxMjgnIHk9JzE2MCcgZm9udC1mYW1pbHk9J0FyaWFsJyBmb250LXNpemU9JzEyMCcgZmlsbD0nd2hpdGUnIHRleHQtYW5jaG9yPSdtaWRkbGUnPkU8L3RleHQ+PC9zdmc+IiwiY2FjaGVfYnVzdCI6IjIwMjYwMzI0Iiwic2l6ZXMiOiIyNTZ4MjU2IiwidHlwZSI6ImltYWdlL3N2Zyt4bWwifV19">
     <style>
         body { background-color: #f8f9fa; }
         .nav-link.active { background-color: #0d6efd; color: white !important; border-radius: 8px; }
@@ -19,33 +16,72 @@
         .desc-cell.expanded { white-space: normal; overflow: visible; }
         .amount-positive { color: #198754; font-weight: 600; }
         .amount-negative { color: #dc3545; font-weight: 600; }
+        .modal-header { background-color: #0d6efd; color: white; }
         .summary-table td { white-space: nowrap; }
         .job-summary-table { min-width: 600px; }
         .job-summary-table td, .job-summary-table th { white-space: nowrap; }
+
+        /* NEW: Mobile optimizations for the navbar links */
+    @media (max-width: 991.98px) {
+        .navbar-nav .nav-item {
+            margin-bottom: 0.5rem;
+        }
+        .nav-link.active {
+            display: inline-block; /* Prevents the active background from stretching full width */
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+        }
+         }
     </style>
 </head>
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
+            
+            <button class="navbar-toggler me-2 border-0 px-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbars" aria-controls="navbars" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+    
             <a class="navbar-brand fw-bold" href="#">Job Ledger</a>
-            <div class="ms-auto">
-                <button onclick="installPWA()" id="installBtn" class="btn btn-light btn-sm d-none">
-                    <i class="bi bi-download"></i> Install App
+    
+            <div class="ms-auto order-lg-last d-flex align-items-center">
+                <button onclick="reconnectFolder()" class="btn btn-light btn-sm" title="Reconnect Permanent Folder">
+                    <i class="bi bi-folder-symlink-fill"></i>
                 </button>
             </div>
+    
+            <div class="collapse navbar-collapse" id="navbars">
+                <ul class="navbar-nav ms-auto text-center text-lg-start mt-3 mt-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link px-3 active" id="nav-transactions" href="#">Transactions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-3" id="nav-reports" href="#">Reports</a>
+                    </li>
+                </ul>
+            </div>
+            
         </div>
     </nav>
 
     <div class="container py-4">
+
         <!-- TRANSACTIONS SECTION -->
         <div id="transactions-section">
+            <!-- Buttons row -->
             <div class="d-flex gap-2 mb-2 align-items-center">
                 <button onclick="showAddMenu()" class="btn btn-primary"><i class="bi bi-plus-circle"></i> New</button>
                 <button onclick="openFilterModal()" class="btn btn-outline-primary"><i class="bi bi-funnel"></i> Filter</button>
+                
+                <!-- Export icons on extreme right -->
                 <div class="ms-auto d-flex gap-2">
-                    <button onclick="exportExcel()" class="btn btn-sm text-success p-2" title="Export Excel"><i class="bi bi-file-earmark-spreadsheet-fill fs-3"></i></button>
-                    <button onclick="exportPDF()" class="btn btn-sm text-danger p-2" title="Export PDF"><i class="bi bi-file-earmark-pdf-fill fs-3"></i></button>
+                    <button onclick="exportExcel()" class="btn btn-sm text-success p-2" title="Export Excel">
+                        <i class="bi bi-file-earmark-spreadsheet-fill fs-3"></i>
+                    </button>
+                    <button onclick="exportPDF()" class="btn btn-sm text-danger p-2" title="Export PDF">
+                        <i class="bi bi-file-earmark-pdf-fill fs-3"></i>
+                    </button>
                 </div>
             </div>
 
@@ -54,11 +90,20 @@
                 <tbody id="filtered-summary-body"></tbody>
             </table>
 
+            <!-- Transactions Header + Table -->
             <h4 class="mt-4 mb-3">Transactions</h4>
             <div class="table-responsive">
                 <table class="table table-hover transaction-table" id="transactions-table">
                     <thead class="table-light">
-                        <tr><th>Date</th><th>Type</th><th>Job</th><th>Category</th><th class="text-end">Amount</th><th>Description</th><th class="text-center">Action</th></tr>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Job</th>
+                            <th>Category</th>
+                            <th class="text-end">Amount</th>
+                            <th>Description</th>
+                            <th class="text-center">Action</th>
+                        </tr>
                     </thead>
                     <tbody id="transactions-body"></tbody>
                 </table>
@@ -70,9 +115,13 @@
 
         <!-- REPORTS SECTION -->
         <div id="reports-section" class="d-none">
+            <!-- Period filter button -->
             <div class="mb-3">
-                <button onclick="openReportFilterModal()" class="btn btn-outline-primary"><i class="bi bi-calendar3"></i> Period Filter</button>
+                <button onclick="openReportFilterModal()" class="btn btn-outline-primary">
+                    <i class="bi bi-calendar3"></i> Period Filter
+                </button>
             </div>
+
             <h4 class="mb-3">Global Summary</h4>
             <table class="table table-bordered summary-table" id="global-summary-table">
                 <tbody id="global-summary-body"></tbody>
@@ -81,7 +130,9 @@
             <h5 class="mt-5 mb-3">Per Job Summary</h5>
             <div class="table-responsive">
                 <table class="table table-sm job-summary-table" id="job-summary-table">
-                    <thead class="table-light"><tr><th>Job</th><th class="text-end">Income</th><th class="text-end">Expense</th><th class="text-end">Net</th></tr></thead>
+                    <thead class="table-light">
+                        <tr><th>Job</th><th class="text-end">Income</th><th class="text-end">Expense</th><th class="text-end">Net</th></tr>
+                    </thead>
                     <tbody id="job-summary-body"></tbody>
                 </table>
             </div>
@@ -109,7 +160,7 @@
         </div>
     </div>
 
-    <!-- FILTER MODAL -->
+    <!-- FILTER MODAL (transactions) -->
     <div class="modal fade" id="filterModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -152,6 +203,7 @@
         </div>
     </div>
 
+    <!-- INCOME / EXPENSE / TRANSFER / NEW JOB / NEW CATEGORY / MANAGE JOBS / MANAGE CATEGORIES MODALS (unchanged) -->
     <!-- INCOME MODAL -->
     <div class="modal fade" id="incomeModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -160,12 +212,12 @@
                 <form id="incomeForm">
                     <div class="modal-body">
                         <div class="row">
-                            <div class="col-md-6 mb-3"><label class="form-label">Date</label><input type="date" id="income-date" class="form-control" required></div>
-                            <div class="col-md-6 mb-3"><label class="form-label">Amount (UGX)</label><input type="number" id="income-amount" class="form-control" step="100" required></div>
+                            <div class="col-md-6 mb-3"><label>Date</label><input type="date" id="income-date" class="form-control" required></div>
+                            <div class="col-md-6 mb-3"><label>Amount (UGX)</label><input type="number" id="income-amount" class="form-control" step="100" required></div>
                         </div>
-                        <div class="mb-3"><label class="form-label">Job</label><select id="income-job" class="form-select" required></select></div>
-                        <div class="mb-3"><label class="form-label">Category</label><select id="income-category" class="form-select" required></select></div>
-                        <div class="mb-3"><label class="form-label">Description</label><textarea id="income-desc" class="form-control" rows="2"></textarea></div>
+                        <div class="mb-3"><label>Job</label><select id="income-job" class="form-select" required></select></div>
+                        <div class="mb-3"><label>Category</label><select id="income-category" class="form-select" required></select></div>
+                        <div class="mb-3"><label>Description</label><textarea id="income-desc" class="form-control" rows="2"></textarea></div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -184,12 +236,12 @@
                 <form id="expenseForm">
                     <div class="modal-body">
                         <div class="row">
-                            <div class="col-md-6 mb-3"><label class="form-label">Date</label><input type="date" id="expense-date" class="form-control" required></div>
-                            <div class="col-md-6 mb-3"><label class="form-label">Amount (UGX)</label><input type="number" id="expense-amount" class="form-control" step="100" required></div>
+                            <div class="col-md-6 mb-3"><label>Date</label><input type="date" id="expense-date" class="form-control" required></div>
+                            <div class="col-md-6 mb-3"><label>Amount (UGX)</label><input type="number" id="expense-amount" class="form-control" step="100" required></div>
                         </div>
-                        <div class="mb-3"><label class="form-label">Job</label><select id="expense-job" class="form-select" required></select></div>
-                        <div class="mb-3"><label class="form-label">Category</label><select id="expense-category" class="form-select" required></select></div>
-                        <div class="mb-3"><label class="form-label">Description</label><textarea id="expense-desc" class="form-control" rows="2"></textarea></div>
+                        <div class="mb-3"><label>Job</label><select id="expense-job" class="form-select" required></select></div>
+                        <div class="mb-3"><label>Category</label><select id="expense-category" class="form-select" required></select></div>
+                        <div class="mb-3"><label>Description</label><textarea id="expense-desc" class="form-control" rows="2"></textarea></div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -208,12 +260,12 @@
                 <form id="transferForm">
                     <div class="modal-body">
                         <div class="row">
-                            <div class="col-md-6 mb-3"><label class="form-label">Date</label><input type="date" id="transfer-date" class="form-control" required></div>
-                            <div class="col-md-6 mb-3"><label class="form-label">Amount (UGX)</label><input type="number" id="transfer-amount" class="form-control" step="100" required></div>
+                            <div class="col-md-6 mb-3"><label>Date</label><input type="date" id="transfer-date" class="form-control" required></div>
+                            <div class="col-md-6 mb-3"><label>Amount (UGX)</label><input type="number" id="transfer-amount" class="form-control" step="100" required></div>
                         </div>
-                        <div class="mb-3"><label class="form-label">From Job</label><select id="transfer-from" class="form-select" required></select></div>
-                        <div class="mb-3"><label class="form-label">To Job</label><select id="transfer-to" class="form-select" required></select></div>
-                        <div class="mb-3"><label class="form-label">Description</label><textarea id="transfer-desc" class="form-control" rows="2"></textarea></div>
+                        <div class="mb-3"><label>From Job</label><select id="transfer-from" class="form-select" required></select></div>
+                        <div class="mb-3"><label>To Job</label><select id="transfer-to" class="form-select" required></select></div>
+                        <div class="mb-3"><label>Description</label><textarea id="transfer-desc" class="form-control" rows="2"></textarea></div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -224,59 +276,31 @@
         </div>
     </div>
 
-    <!-- NEW JOB MODAL -->
-    <div class="modal fade" id="newJobModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5>New Job</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <form id="newJobForm">
-                    <div class="modal-body"><input type="text" id="new-job-name" class="form-control" placeholder="Job name" required></div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Create</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    <!-- NEW JOB / NEW CATEGORY / MANAGE JOBS / MANAGE CATEGORIES MODALS (same as before) -->
+    <div class="modal fade" id="newJobModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header"><h5>New Job</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form id="newJobForm"><div class="modal-body"><input type="text" id="new-job-name" class="form-control" placeholder="Job name" required></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Create</button></div></form>
+    </div></div></div>
 
-    <!-- NEW CATEGORY MODAL -->
-    <div class="modal fade" id="newCategoryModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5>New Category</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <form id="newCategoryForm">
-                    <div class="modal-body"><input type="text" id="new-category-name" class="form-control" placeholder="Category name" required></div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Create</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    <div class="modal fade" id="newCategoryModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header"><h5>New Category</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form id="newCategoryForm"><div class="modal-body"><input type="text" id="new-category-name" class="form-control" placeholder="Category name" required></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Create</button></div></form>
+    </div></div></div>
 
-    <!-- MANAGE JOBS MODAL -->
-    <div class="modal fade" id="manageJobsModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5>Manage Jobs</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body"><div id="jobs-list" class="list-group"></div></div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
-            </div>
-        </div>
-    </div>
+    <div class="modal fade" id="manageJobsModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header"><h5>Manage Jobs</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body"><div id="jobs-list" class="list-group"></div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
+    </div></div></div>
 
-    <!-- MANAGE CATEGORIES MODAL -->
-    <div class="modal fade" id="manageCategoriesModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5>Manage Categories</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body"><div id="categories-list" class="list-group"></div></div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
-            </div>
-        </div>
-    </div>
+    <div class="modal fade" id="manageCategoriesModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header"><h5>Manage Categories</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body"><div id="categories-list" class="list-group"></div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
+    </div></div></div>
+
 
     <!-- Toast -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
@@ -285,74 +309,30 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // ===================== INDEXEDDB STORAGE =====================
-        let db;
-        const DB_NAME = "JobLedgerDB";
-        const DB_VERSION = 1;
-
-        function openDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onupgradeneeded = e => {
-                    db = e.target.result;
-                    if (!db.objectStoreNames.contains("jobs")) db.createObjectStore("jobs", { keyPath: "id" });
-                    if (!db.objectStoreNames.contains("categories")) db.createObjectStore("categories", { keyPath: "id" });
-                    if (!db.objectStoreNames.contains("transactions")) db.createObjectStore("transactions", { keyPath: "id" });
-                };
-                request.onsuccess = e => {
-                    db = e.target.result;
-                    resolve(db);
-                };
-                request.onerror = e => reject(e);
-            });
-        }
-
-        async function loadData() {
-            await openDB();
-            const tx = db.transaction(["jobs", "categories", "transactions"], "readonly");
-            const jobsStore = tx.objectStore("jobs");
-            const catsStore = tx.objectStore("categories");
-            const transStore = tx.objectStore("transactions");
-
-            jobs = await new Promise(r => jobsStore.getAll().onsuccess = e => r(e.target.result));
-            categories = await new Promise(r => catsStore.getAll().onsuccess = e => r(e.target.result));
-            transactions = await new Promise(r => transStore.getAll().onsuccess = e => r(e.target.result));
-
-            if (jobs.length === 0) {
-                // Seed default data
-                jobs = [{ id: 1, name: "Apartment Wiring", status: "active" }, { id: 2, name: "School Electrical Installation", status: "active" }];
-                categories = [
-                    { id: 1, name: "Materials", hidden: false }, { id: 2, name: "Employee Salary", hidden: false },
-                    { id: 3, name: "Transport", hidden: false }, { id: 4, name: "Equipment", hidden: false },
-                    { id: 5, name: "Owner Salary", hidden: false }, { id: 6, name: "Inflow", hidden: false },
-                    { id: 7, name: "Outflow", hidden: false }
-                ];
-                transactions = [
-                    { id: 1001, type: "income", job: 1, category: 1, amount: 850000, description: "Client advance payment for wiring", date: "2025-03-01", transferId: null },
-                    { id: 1002, type: "expense", job: 1, category: 1, amount: 320000, description: "Cement and wires purchase", date: "2025-03-05", transferId: null }
-                ];
-                await saveData();
-            }
-        }
-
-        async function saveData() {
-            await openDB();
-            const tx = db.transaction(["jobs", "categories", "transactions"], "readwrite");
-            const jobsStore = tx.objectStore("jobs");
-            const catsStore = tx.objectStore("categories");
-            const transStore = tx.objectStore("transactions");
-
-            jobs.forEach(j => jobsStore.put(j));
-            categories.forEach(c => catsStore.put(c));
-            transactions.forEach(t => transStore.put(t));
-
-            return new Promise(r => tx.oncomplete = r);
-        }
-
-        // ===================== REST OF THE APP (exactly as before) =====================
+        // ===================== DATA =====================
+        let jobs = [], categories = [], transactions = [];
         let currentFilters = { from: '', to: '', job: '', category: '', type: '' };
         let reportFilters = { from: '', to: '' };
         let editingId = null;
+
+        const STORAGE_KEY = 'jobLedgerData_v5';
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                jobs = data.jobs || [];
+                categories = data.categories || [];
+                transactions = data.transactions || [];
+            } else {
+                jobs = [{ id: 1, name: "Apartment Wiring", status: "active" }, { id: 2, name: "School Electrical Installation", status: "active" }];
+                categories = [{ id: 1, name: "Materials", hidden: false }, { id: 2, name: "Employee Salary", hidden: false }, { id: 3, name: "Transport", hidden: false }, { id: 4, name: "Equipment", hidden: false }, { id: 5, name: "Owner Salary", hidden: false }, { id: 6, name: "Inflow", hidden: false }, { id: 7, name: "Outflow", hidden: false }];
+                transactions = [{ id: 1001, type: "income", job: 1, category: 1, amount: 850000, description: "Client advance payment for wiring", date: "2025-03-01", transferId: null }, { id: 1002, type: "expense", job: 1, category: 1, amount: 320000, description: "Cement and wires purchase", date: "2025-03-05", transferId: null }];
+                saveData();
+            }
+        }
+
+        function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ jobs, categories, transactions })); }
 
         function formatAmount(n) { return "UGX " + Number(n).toLocaleString('en-US'); }
         function getCategoryName(id) { const c = categories.find(x => x.id === id); return c ? c.name : '—'; }
@@ -366,6 +346,7 @@
             new bootstrap.Toast(toastEl).show();
         }
 
+        // ===================== RENDER =====================
         function renderTransactions(filteredList = null) {
             const tbody = document.getElementById('transactions-body');
             tbody.innerHTML = '';
@@ -479,7 +460,9 @@
             });
 
             let csv = "Date,Type,Job,Category,Amount,Description\n";
-            filtered.forEach(t => csv += `"${t.date}","${t.type}","${getJobName(t.job)}","${getCategoryName(t.category)}",${t.amount},"${(t.description || '').replace(/"/g,'""')}"\n`);
+            filtered.forEach(t => {
+                csv += `"${t.date}","${t.type}","${getJobName(t.job)}","${getCategoryName(t.category)}",${t.amount},"${(t.description || '').replace(/"/g,'""')}"\n`;
+            });
 
             const summaryRow = `Summary\nIncome,${document.getElementById('filtered-summary-body').rows[0].cells[1].textContent}\nExpense,${document.getElementById('filtered-summary-body').rows[1].cells[1].textContent}\nNet,${document.getElementById('filtered-summary-body').rows[2].cells[1].textContent}\n\n`;
             csv = summaryRow + csv;
@@ -515,17 +498,19 @@
                 doc.text(line, 14, y);
                 y += 8;
             }
+
             doc.save('transactions.pdf');
             showToast('PDF file downloaded');
         }
 
-        // ===================== FILTERS =====================
+        // ===================== FILTERS & REPORTS =====================
         function applyFilters() {
             const from = document.getElementById('filter-from').value;
             const to = document.getElementById('filter-to').value;
             const job = document.getElementById('filter-job').value;
             const cat = document.getElementById('filter-category').value;
             const type = document.getElementById('filter-type').value;
+
             currentFilters = { from, to, job, category: cat, type };
 
             let filtered = transactions.filter(t => {
@@ -574,7 +559,7 @@
             new bootstrap.Modal(document.getElementById('reportFilterModal')).show();
         }
 
-        // ===================== POPULATE SELECTS =====================
+        // ===================== POPULATE, MODALS, FORMS, EDIT, DELETE, NAV (same as previous working version) =====================
         function populateJobSelects() {
             const activeJobs = jobs.filter(j => j.status === 'active');
             const selects = ['income-job','expense-job','transfer-from','transfer-to','filter-job'];
@@ -597,7 +582,6 @@
             });
         }
 
-        // ===================== MODALS =====================
         function showAddMenu() { new bootstrap.Modal(document.getElementById('addMenuModal')).show(); }
 
         function openIncomeModal(editData = null) {
@@ -695,29 +679,14 @@
             populateCategorySelects();
         }
 
-        // ===================== FORM SUBMITS =====================
-        document.getElementById('incomeForm').addEventListener('submit', async e => {
+        // Form submits (same logic)
+        document.getElementById('incomeForm').addEventListener('submit', e => {
             e.preventDefault();
             const amount = parseFloat(document.getElementById('income-amount').value);
             if (!amount || amount <= 0) return showToast('Amount must be positive', 'error');
-
-            const newTrans = {
-                id: editingId || generateId(),
-                type: 'income',
-                job: parseInt(document.getElementById('income-job').value),
-                category: parseInt(document.getElementById('income-category').value),
-                amount: amount,
-                description: document.getElementById('income-desc').value.trim(),
-                date: document.getElementById('income-date').value,
-                transferId: null
-            };
-
-            if (editingId) {
-                const idx = transactions.findIndex(t => t.id === editingId);
-                if (idx > -1) transactions[idx] = newTrans;
-            } else transactions.push(newTrans);
-
-            await saveData();
+            const newTrans = { id: editingId || generateId(), type: 'income', job: parseInt(document.getElementById('income-job').value), category: parseInt(document.getElementById('income-category').value), amount, description: document.getElementById('income-desc').value.trim(), date: document.getElementById('income-date').value, transferId: null };
+            if (editingId) { const idx = transactions.findIndex(t => t.id === editingId); if (idx > -1) transactions[idx] = newTrans; } else transactions.push(newTrans);
+            saveData();
             renderTransactions();
             renderFilteredSummary(transactions);
             bootstrap.Modal.getInstance(document.getElementById('incomeModal')).hide();
@@ -725,28 +694,13 @@
             showToast('Income saved');
         });
 
-        document.getElementById('expenseForm').addEventListener('submit', async e => {
+        document.getElementById('expenseForm').addEventListener('submit', e => {
             e.preventDefault();
             const amount = parseFloat(document.getElementById('expense-amount').value);
             if (!amount || amount <= 0) return showToast('Amount must be positive', 'error');
-
-            const newTrans = {
-                id: editingId || generateId(),
-                type: 'expense',
-                job: parseInt(document.getElementById('expense-job').value),
-                category: parseInt(document.getElementById('expense-category').value),
-                amount: amount,
-                description: document.getElementById('expense-desc').value.trim(),
-                date: document.getElementById('expense-date').value,
-                transferId: null
-            };
-
-            if (editingId) {
-                const idx = transactions.findIndex(t => t.id === editingId);
-                if (idx > -1) transactions[idx] = newTrans;
-            } else transactions.push(newTrans);
-
-            await saveData();
+            const newTrans = { id: editingId || generateId(), type: 'expense', job: parseInt(document.getElementById('expense-job').value), category: parseInt(document.getElementById('expense-category').value), amount, description: document.getElementById('expense-desc').value.trim(), date: document.getElementById('expense-date').value, transferId: null };
+            if (editingId) { const idx = transactions.findIndex(t => t.id === editingId); if (idx > -1) transactions[idx] = newTrans; } else transactions.push(newTrans);
+            saveData();
             renderTransactions();
             renderFilteredSummary(transactions);
             bootstrap.Modal.getInstance(document.getElementById('expenseModal')).hide();
@@ -754,43 +708,40 @@
             showToast('Expense saved');
         });
 
-        document.getElementById('transferForm').addEventListener('submit', async e => {
+        document.getElementById('transferForm').addEventListener('submit', e => {
             e.preventDefault();
             const amount = parseFloat(document.getElementById('transfer-amount').value);
             const from = parseInt(document.getElementById('transfer-from').value);
             const to = parseInt(document.getElementById('transfer-to').value);
             if (from === to) return showToast('Jobs must be different', 'error');
-
             const transferId = 'TRF-' + Date.now();
             const desc = document.getElementById('transfer-desc').value.trim() || 'Transfer';
-
             transactions.push({ id: generateId(), type: 'expense', job: from, category: categories.find(c => c.name === 'Outflow').id, amount, description: desc + ` → ${getJobName(to)}`, date: document.getElementById('transfer-date').value, transferId });
             transactions.push({ id: generateId(), type: 'income', job: to, category: categories.find(c => c.name === 'Inflow').id, amount, description: desc + ` ← ${getJobName(from)}`, date: document.getElementById('transfer-date').value, transferId });
-
-            await saveData();
+            saveData();
             renderTransactions();
             renderFilteredSummary(transactions);
             bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
             showToast('Transfer recorded');
         });
 
-        document.getElementById('newJobForm').addEventListener('submit', async e => {
+        document.getElementById('newJobForm').addEventListener('submit', e => {
             e.preventDefault();
             const name = document.getElementById('new-job-name').value.trim();
             if (!name) return;
             jobs.push({ id: generateId(), name, status: 'active' });
-            await saveData();
+            saveData();
             populateJobSelects();
             bootstrap.Modal.getInstance(document.getElementById('newJobModal')).hide();
             showToast('Job created');
         });
 
-        document.getElementById('newCategoryForm').addEventListener('submit', async e => {
+        document.getElementById('newCategoryForm').addEventListener('submit', e => {
             e.preventDefault();
             const name = document.getElementById('new-category-name').value.trim();
             if (!name) return;
             categories.push({ id: generateId(), name, hidden: false });
-            await saveData();
+            saveData();
             populateCategorySelects();
             bootstrap.Modal.getInstance(document.getElementById('newCategoryModal')).hide();
             showToast('Category created');
@@ -836,53 +787,169 @@
             }
         }
 
-        // ===================== PWA =====================
-        let deferredPrompt;
-        function registerPWA() {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('data:application/javascript,' + encodeURIComponent(`
-                    self.addEventListener('install', e => {
-                        e.waitUntil(caches.open('job-ledger-v1').then(cache => cache.addAll(['./', 'index.html'])));
-                    });
-                    self.addEventListener('fetch', e => {
-                        e.respondWith(caches.match(e.request).then(response => response || fetch(e.request)));
-                    });
-                `)).then(() => console.log('%c✅ Service Worker registered', 'color:green'));
-            }
-
-            window.addEventListener('beforeinstallprompt', e => {
-                e.preventDefault();
-                deferredPrompt = e;
-                document.getElementById('installBtn').classList.remove('d-none');
-            });
-        }
-
-        function installPWA() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(choice => {
-                    if (choice.outcome === 'accepted') showToast('App installed successfully!');
-                    deferredPrompt = null;
-                    document.getElementById('installBtn').classList.add('d-none');
-                });
-            }
-        }
+        document.getElementById('nav-transactions').addEventListener('click', e => { e.preventDefault(); switchTo('transactions'); });
+        document.getElementById('nav-reports').addEventListener('click', e => { e.preventDefault(); switchTo('reports'); });
 
         // ===================== INIT =====================
-        async function init() {
-            await loadData();
+        function init() {
+            loadData();
             populateJobSelects();
             populateCategorySelects();
             renderTransactions();
             renderFilteredSummary(transactions);
             switchTo('transactions');
             calculateAndRenderReports();
-            registerPWA();
-
-            console.log('%c✅ FULL PWA + INDEXEDDB READY — Works 100% offline on any device. Data survives cache clearing.', 'color:green;font-weight:bold');
+            console.log('%c✅ FINAL VERSION – Export icons (Excel green + PDF red) on right, no summary headers, reports period in modal, per-job horizontal scroll, no reports export', 'color:green;font-weight:bold');
         }
 
         window.onload = init;
+
+    </script>
+<!-- ===================== FIXED DEVICE STORAGE v3 (prevents overwrite) ===================== -->
+<script>
+    let dirHandle = null;
+    const FILE_NAME = 'job-ledger-data.json';
+    const DB_NAME = "JobLedgerFS";
+    const DB_VERSION = 1;
+    
+    async function openDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onupgradeneeded = e => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains("handles")) db.createObjectStore("handles", { keyPath: "id" });
+            };
+            req.onsuccess = e => resolve(e.target.result);
+            req.onerror = e => reject(e);
+        });
+    }
+    
+    async function saveHandle(handle) {
+        const db = await openDB();
+        const tx = db.transaction("handles", "readwrite");
+        return new Promise(r => { tx.objectStore("handles").put({ id: "main", handle }); tx.oncomplete = r; });
+    }
+    
+    async function loadHandle() {
+        const db = await openDB();
+        const tx = db.transaction("handles", "readonly");
+        return new Promise(resolve => {
+            const req = tx.objectStore("handles").get("main");
+            req.onsuccess = () => resolve(req.result ? req.result.handle : null);
+            req.onerror = () => resolve(null);
+        });
+    }
+    
+    async function getDirHandle() {
+        if (dirHandle) return dirHandle;
+        dirHandle = await loadHandle();
+        return dirHandle;
+    }
+    
+    async function reconnectFolder() {
+        try {
+            dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+            await saveHandle(dirHandle);
+    
+            // Try to load real data from folder first
+            const loaded = await loadFromFolder();
+            if (!loaded) {
+                // Only migrate from localStorage if the folder was empty
+                const old = localStorage.getItem(STORAGE_KEY);
+                if (old) {
+                    try {
+                        const parsed = JSON.parse(old);
+                        if (parsed.jobs) jobs = parsed.jobs;
+                        if (parsed.categories) categories = parsed.categories;
+                        if (parsed.transactions) transactions = parsed.transactions;
+                    } catch(e) {}
+                }
+            }
+    
+            await saveToFolder();
+            renderTransactions();
+            renderFilteredSummary(transactions);
+            calculateAndRenderReports();
+            showToast('✅ Connected to permanent folder!', 'success');
+        } catch (err) {
+            if (err.name !== 'AbortError') showToast('Folder picker was cancelled.', 'info');
+        }
+    }
+    
+    async function loadFromFolder() {
+        const handle = await getDirHandle();
+        if (!handle) return false;
+        try {
+            const fileHandle = await handle.getFileHandle(FILE_NAME);
+            const file = await fileHandle.getFile();
+            const text = await file.text();
+            const data = JSON.parse(text || '{}');
+    
+            let hasRealData = false;
+            if (data.jobs && data.jobs.length > 0) { jobs = data.jobs; hasRealData = true; }
+            if (data.categories && data.categories.length > 0) { categories = data.categories; hasRealData = true; }
+            if (data.transactions && data.transactions.length > 0) { transactions = data.transactions; hasRealData = true; }
+    
+            console.log('%c✅ Loaded from permanent device folder', 'color:green');
+            return hasRealData;
+        } catch (e) {
+            if (e.name === 'NotFoundError') console.log('No data file yet – will create on next save');
+            return false;
+        }
+    }
+    
+    async function saveToFolder() {
+        const handle = await getDirHandle();
+        if (!handle) return;
+        try {
+            const fileHandle = await handle.getFileHandle(FILE_NAME, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify({ jobs, categories, transactions }, null, 2));
+            await writable.close();
+            console.log('%c✅ Saved to permanent device folder (survives clear site data)', 'color:green');
+        } catch (e) { console.error(e); }
+    }
+    
+    // Override saveData
+    const originalSaveData = saveData;
+    saveData = function() {
+        originalSaveData();
+        if ('showDirectoryPicker' in window) saveToFolder().catch(console.error);
+    };
+    
+    // Fixed init – load from folder FIRST
+    const originalInit = init;
+    init = async function() {
+        originalInit();                    // your original localStorage/defaults
+        if ('showDirectoryPicker' in window) {
+            const loaded = await loadFromFolder();
+            if (loaded) {
+                populateJobSelects();
+                populateCategorySelects();
+                renderTransactions();
+                renderFilteredSummary(transactions);
+                calculateAndRenderReports();
+            }
+        }
+    };
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Get all the nav links inside the collapsible menu
+            const navLinks = document.querySelectorAll('.navbar-collapse .nav-link');
+            const menuToggle = document.getElementById('navbars');
+            
+            navLinks.forEach(function(link) {
+                link.addEventListener('click', function() {
+                    // Check if the menu is currently open
+                    if (menuToggle.classList.contains('show')) {
+                        // Use Bootstrap's built-in Collapse API to hide it
+                        const bsCollapse = bootstrap.Collapse.getInstance(menuToggle) || new bootstrap.Collapse(menuToggle, {toggle: false});
+                        bsCollapse.hide();
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
